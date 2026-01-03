@@ -1,43 +1,54 @@
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
-    // API endpoint
-    if (url.pathname === "/api/chat") {
-      if (request.method !== "POST") {
-        return new Response("POST only", { status: 405 });
-      }
-
-      const { message } = await request.json();
-      if (!message) {
-        return Response.json({ error: "message required" }, { status: 400 });
-      }
-
-      // DeepSeek tetap berpikir DI BACKEND
-      const result = await env.AI.run(
-        "@cf/deepseek-ai/deepseek-r1-distill-qwen-7b",
-        {
-          messages: [
-            {
-              role: "system",
-              content:
-                "Jawab dalam bahasa Indonesia. " +
-                "Gunakan reasoning internal tapi JANGAN tampilkan proses berpikir. " +
-                "Berikan hanya jawaban final."
-            },
-            { role: "user", content: message }
-          ],
-          temperature: 0.6,
-          max_tokens: 400
+      // ===== API CHAT =====
+      if (url.pathname === "/api/chat") {
+        if (request.method !== "POST") {
+          return new Response("POST only", { status: 405 });
         }
+
+        const body = await request.json().catch(() => null);
+        if (!body || !body.message) {
+          return Response.json(
+            { error: "message required" },
+            { status: 400 }
+          );
+        }
+
+        const result = await env.AI.run(
+          "@cf/deepseek-ai/deepseek-r1-distill-qwen-7b",
+          {
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Jawab dalam bahasa Indonesia. Gunakan reasoning internal, " +
+                  "tapi jangan tampilkan proses berpikir. Jawaban final saja."
+              },
+              { role: "user", content: body.message }
+            ],
+            temperature: 0.6,
+            max_tokens: 400
+          }
+        );
+
+        return Response.json({ answer: result.response });
+      }
+
+      // ===== STATIC FILE =====
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(request);
+      }
+
+      return new Response("Not Found", { status: 404 });
+
+    } catch (err) {
+      return new Response(
+        "Worker error: " + err.message,
+        { status: 500 }
       );
-
-      return Response.json({
-        answer: result.response
-      });
     }
-
-    // Serve static HTML
-    return env.ASSETS.fetch(request);
   }
 };
