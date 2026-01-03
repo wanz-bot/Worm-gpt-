@@ -1,0 +1,9 @@
+name = "cf-worker-deepseek"
+main = "src/chat.js"
+compatibility_date = "2025-01-01"
+
+[ai]
+binding = "AI"
+
+[assets]
+directory = "./public"
