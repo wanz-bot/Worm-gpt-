@@ -1,4 +1,4 @@
-name = "cf-worker-deepseek"
+name = "wormgpt"
 main = "src/chat.js"
 compatibility_date = "2025-01-01"
 
